@@ -36,13 +36,20 @@
     .btn{border:0; border-radius:10px; padding:10px 14px; color:#fff; background:var(--pri); cursor:pointer; box-shadow:var(--shadow)}
     .btn.alt{background:var(--pri-2)}
     .btn.danger{background:var(--danger)}
+    .btn:disabled{opacity:.5; cursor:not-allowed}
     .input, select{border-radius:10px; border:1px solid var(--stroke); background:#0b0f17; color:var(--ink); padding:10px 12px}
+    .file{display:flex; align-items:center; gap:10px; padding:10px; border:1px solid var(--stroke); background:rgba(15,20,32,.5); border-radius:12px; margin:6px 0}
+    .file .name{flex:1}
+    .file .tag{font-size:12px; color:#9fb3ff; background:#0b1222; padding:4px 8px; border-radius:8px; border:1px solid #1b2744}
+    .chk{appearance:none; width:18px; height:18px; border-radius:6px; border:1px solid var(--stroke); background:#0b0f17; position:relative}
+    .chk:checked{background:#1b2b4d}
+    .chk:checked::after{content:""; position:absolute; inset:3px; border-radius:4px; background:#5b8cff}
+    .file-roots{display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px}
+    .file-root{display:block; padding:14px; border-radius:12px; background:rgba(15,20,32,.6); border:1px solid var(--stroke); color:#9fb3ff; text-decoration:none; text-align:center}
     .log{height:420px; overflow:auto; white-space:pre-wrap; background:#0a0f18; border:1px solid var(--stroke); border-radius:12px; padding:12px; font-family:"SF Mono","Fira Code",Consolas,monospace; font-size:13px}
 
-    /* File list */
     #file-browser ul{list-style:none; margin:0; padding:0}
-    #file-browser li{display:flex; align-items:center; gap:8px; padding:8px; border-radius:10px}
-    #file-browser li:hover{background:#0f1623}
+    #file-browser li{list-style:none}
     #file-browser a{color:#87aaff; text-decoration:none}
     .muted{color:var(--muted)}
 
@@ -104,6 +111,7 @@
         <div class="card" style="grid-column:1/-1">
           <h3>File Manager <span class="muted">(browse and move, upload .jar to minecraft only)</span></h3>
           <div id="file-browser" class="muted">Path: <strong id="current-path"></strong>
+            <div id="file-roots" class="file-roots" style="display:none"></div>
             <ul id="file-list"></ul>
           </div>
           <div class="row" style="margin-top:10px">
@@ -114,13 +122,15 @@
           <div class="card" style="background:#0d1320; border-color:#1c2740">
             <h3>Upload .jar</h3>
             <div class="row">
-              <input type="file" id="file-upload-input" accept=".jar" class="input" />
+              <label class="btn" for="file-upload-input" style="background:#374151">Choose file</label>
+              <input type="file" id="file-upload-input" accept=".jar" class="input" style="display:none" />
               <select id="upload-dest" class="input">
                 <option value="minecraft/plugins">minecraft/plugins/</option>
                 <option value="minecraft">minecraft/</option>
               </select>
               <button id="upload-btn" class="btn">Upload</button>
             </div>
+            <div id="chosen-file" class="muted" style="margin-top:6px"></div>
           </div>
         </div>
       </div>

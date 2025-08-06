@@ -27,6 +27,8 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const currentPathSpan = document.getElementById('current-path');
     const fileListUl = document.getElementById('file-list');
+    const fileRoots = document.getElementById('file-roots');
+    const chosenFile = document.getElementById('chosen-file');
 
     // Tabs
     const tabButtons = document.querySelectorAll('.tab-btn');
@@ -112,14 +114,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const contents = (data && Array.isArray(data.contents)) ? data.contents : [];
 
         if (currentDirectory === '.') {
+            fileRoots.style.display = 'grid';
+            fileRoots.innerHTML = '';
             const names = new Set(contents.map(i => i.name));
             ['minecraft', 'backup'].forEach(root => {
-                if (!names.has(root)) {
-                    const li = document.createElement('li');
-                    li.innerHTML = `<strong><a href=\"#\" data-path=\"${root}\">[${root}]</a></strong>`;
-                    fileListUl.appendChild(li);
-                }
+                const div = document.createElement('a');
+                div.className = 'file-root';
+                div.href = '#';
+                div.dataset.path = root;
+                div.textContent = root.toUpperCase();
+                fileRoots.appendChild(div);
             });
+        } else {
+            fileRoots.style.display = 'none';
         }
 
         if (currentDirectory !== '.') {
@@ -132,19 +139,33 @@ document.addEventListener('DOMContentLoaded', () => {
         contents.forEach(item => {
             const li = document.createElement('li');
             const itemFullPath = currentDirectory === '.' ? item.name : `${currentDirectory}/${item.name}`;
+
+            const row = document.createElement('div');
+            row.className = 'file';
+
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
-            checkbox.className = 'file-checkbox';
+            checkbox.className = 'file-checkbox chk';
             checkbox.setAttribute('data-path', itemFullPath);
-            li.appendChild(checkbox);
+            row.appendChild(checkbox);
 
-            const label = document.createElement('label');
+            const name = document.createElement('div');
+            name.className = 'name';
             if (item.is_dir) {
-                label.innerHTML = ` <strong><a href=\"#\" data-path=\"${itemFullPath}\">[${item.name}]</a></strong>`;
+                name.innerHTML = `<a href=\"#\" data-path=\"${itemFullPath}\">${item.name}/</a>`;
             } else {
-                label.innerHTML = ` ${item.name}`;
+                name.textContent = item.name;
             }
-            li.appendChild(label);
+            row.appendChild(name);
+
+            if (item.is_dir) {
+                const tag = document.createElement('span');
+                tag.className = 'tag';
+                tag.textContent = 'DIR';
+                row.appendChild(tag);
+            }
+
+            li.appendChild(row);
             fileListUl.appendChild(li);
         });
         updateFileActionButtons();
@@ -172,6 +193,14 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             const path = link.getAttribute('data-path');
             fetchFiles(path);
+        }
+    });
+
+    fileRoots.addEventListener('click', (e) => {
+        const link = e.target.closest('a');
+        if (link) {
+            e.preventDefault();
+            fetchFiles(link.dataset.path);
         }
     });
 
@@ -216,6 +245,10 @@ document.addEventListener('DOMContentLoaded', () => {
         fetchFiles(currentDirectory);
     });
 
+    fileUploadInput.addEventListener('change', () => {
+        chosenFile.textContent = fileUploadInput.files[0] ? fileUploadInput.files[0].name : '';
+    });
+
     uploadBtn.addEventListener('click', async () => {
         const file = fileUploadInput.files[0];
         const destination = uploadDestSelect.value;
@@ -238,6 +271,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if(result.status === 'success') {
                 fetchFiles(currentDirectory);
                 fileUploadInput.value = '';
+                chosenFile.textContent = '';
             }
         } catch(error) {
             console.error('Upload Error:', error);
