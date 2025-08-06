@@ -56,16 +56,17 @@ def run_backup_script():
     try:
         # Use subprocess.run to execute the script and wait for it to complete.
         # This is a blocking call, necessary for the lock in app.py to work correctly.
+        # We do NOT capture output here, because the script itself handles logging to a file
+        # which is then streamed by log_streamer. Capturing it can cause buffering issues
+        # that prevent real-time log updates.
         process = subprocess.run(
             [BACKUP_SCRIPT_PATH],
-            capture_output=True,
-            text=True,
             check=False
         )
         if process.returncode != 0:
             error_message = (
-                f"Backup script failed with exit code {process.returncode}.\n"
-                f"STDERR: {process.stderr.strip()}"
+                f"Backup script failed with exit code {process.returncode}. "
+                "Check the backup log on the web interface for details."
             )
             print(error_message) # Log to Flask console for debugging
             return {"status": "error", "message": error_message}
