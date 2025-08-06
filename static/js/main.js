@@ -22,7 +22,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // Event Listeners for server control buttons
     startBtn.addEventListener('click', () => postData('/api/start_server'));
     stopBtn.addEventListener('click', () => postData('/api/stop_server'));
-    backupBtn.addEventListener('click', () => postData('/api/run_backup'));
+    backupBtn.addEventListener('click', async () => {
+        if (confirm("Are you sure you want to start a new backup? The server will be stopped temporarily.")) {
+            backupBtn.disabled = true;
+            // The backup script clears its own log, so we just give initial feedback.
+            backupOutput.textContent = 'Requesting backup start...\n';
+            const result = await postData('/api/run_backup');
+            // If the backup couldn't be started (e.g., already running), show an error and re-enable the button.
+            if (result && result.status === 'error') {
+                appendToLog(backupOutput, `\nError: ${result.message}\n`);
+                backupBtn.disabled = false;
+            }
+        }
+    });
     sendCommandBtn.addEventListener('click', async () => {
         console.log('Send command button clicked.');
         const command = commandInput.value;
@@ -73,8 +85,10 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             const result = await response.json();
             console.log(result);
+            return result;
         } catch (error) {
             console.error('Error:', error);
+            return { status: 'error', message: 'A network error occurred.' };
         }
     }
 
@@ -121,6 +135,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     socket.on('backup_output', (msg) => {
         appendToLog(backupOutput, msg.data);
+    });
+
+    socket.on('backup_status', (msg) => {
+        if (msg.status === 'finished') {
+            console.log('Backup process finished.');
+            backupBtn.disabled = false;
+        }
     });
 
     // File Manager

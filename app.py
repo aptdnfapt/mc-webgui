@@ -8,6 +8,8 @@ import server_manager
 import log_streamer
 import file_manager
 
+backup_lock = threading.Lock()
+
 # Load environment variables from .env file
 load_dotenv()
 
@@ -49,8 +51,22 @@ def send_command_route():
 
 @app.route('/api/run_backup', methods=['POST'])
 def run_backup_route():
-    result = server_manager.run_backup_script()
-    return jsonify(result)
+    if not backup_lock.acquire(blocking=False):
+        return jsonify({"status": "error", "message": "A backup is already in progress."})
+
+    def backup_task():
+        """The actual backup process, run in a background thread."""
+        try:
+            print("Starting backup task in background thread.")
+            server_manager.run_backup_script()
+            print("Backup task finished.")
+            # Notify client that backup is done so the button can be re-enabled
+            socketio.emit('backup_status', {'status': 'finished', 'data': 'Backup process has completed.'})
+        finally:
+            backup_lock.release()
+
+    socketio.start_background_task(target=backup_task)
+    return jsonify({"status": "success", "message": "Backup process initiated."})
 
 # --- API Routes for File Management ---
 @app.route('/api/files', methods=['GET'])

@@ -49,13 +49,27 @@ def send_minecraft_command(command):
         command = ''
     return _send_tmux_command(command)
 def run_backup_script():
-    """Executes the backup script in the background."""
+    """Executes the backup script and waits for it to complete."""
     if not os.path.exists(BACKUP_SCRIPT_PATH):
         return {"status": "error", "message": f"Backup script not found at {BACKUP_SCRIPT_PATH}"}
 
     try:
-        # Popen runs the script in a new process and doesn't wait for it to complete.
-        subprocess.Popen([BACKUP_SCRIPT_PATH])
-        return {"status": "success", "message": "Backup script started."}
+        # Use subprocess.run to execute the script and wait for it to complete.
+        # This is a blocking call, necessary for the lock in app.py to work correctly.
+        process = subprocess.run(
+            [BACKUP_SCRIPT_PATH],
+            capture_output=True,
+            text=True,
+            check=False
+        )
+        if process.returncode != 0:
+            error_message = (
+                f"Backup script failed with exit code {process.returncode}.\n"
+                f"STDERR: {process.stderr.strip()}"
+            )
+            print(error_message) # Log to Flask console for debugging
+            return {"status": "error", "message": error_message}
+
+        return {"status": "success", "message": "Backup script completed successfully."}
     except Exception as e:
-        return {"status": "error", "message": f"Failed to start backup script: {e}"}
+        return {"status": "error", "message": f"Failed to run backup script: {e}"}
