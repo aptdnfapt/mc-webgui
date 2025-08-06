@@ -42,49 +42,65 @@
     <div class="container">
         <h1>Minecraft Server Control Panel</h1>
 
-        <div class="controls">
-            <h2>Server Actions</h2>
-            <button id="start-btn">Start Server</button>
-            <button id="stop-btn">Stop Server</button>
-            <button id="backup-btn">Run Backup</button>
+        <nav class="tab-nav" style="border-bottom:2px solid var(--border-color); margin-bottom:16px;">
+            <button class="tab-btn active" data-tab="server">Server</button>
+            <button class="tab-btn" data-tab="backups">Backups</button>
+            <button class="tab-btn" data-tab="files">Files</button>
+        </nav>
+
+        <div id="server" class="tab-content active">
+            <div class="controls">
+                <h2>Server Actions</h2>
+                <button id="start-btn">Start Server</button>
+                <button id="stop-btn">Stop Server</button>
+            </div>
+            <div class="command-bar">
+                <h2>Send Command</h2>
+                <input type="text" id="command-input" placeholder="e.g., say hello world" size="40">
+                <button id="send-command-btn">Send</button>
+            </div>
+            <div class="grid-container">
+                <div class="log-wrapper">
+                    <h2>Minecraft Console</h2>
+                    <div id="console-output" class="log-box"></div>
+                </div>
+            </div>
         </div>
 
-        <div class="command-bar">
-            <h2>Send Command</h2>
-            <input type="text" id="command-input" placeholder="e.g., say hello world" size="40">
-            <button id="send-command-btn">Send</button>
-        </div>
-        
-        <div class="grid-container">
-            <div class="log-wrapper">
-                <h2>Minecraft Console</h2>
-                <div id="console-output" class="log-box"></div>
+        <div id="backups" class="tab-content">
+            <div class="controls">
+                <h2>Backups</h2>
+                <button id="backup-btn">Run Backup</button>
             </div>
-            <div class="log-wrapper">
-                <h2>Backup Log</h2>
-                <div id="backup-output" class="log-box"></div>
+            <div class="grid-container">
+                <div class="log-wrapper">
+                    <h2>Backup Log</h2>
+                    <div id="backup-output" class="log-box"></div>
+                </div>
             </div>
         </div>
 
-        <div class="file-manager">
-            <h2>File Manager</h2>
-            <div id="file-browser">
-                <p>Current Path: <strong id="current-path"></strong></p>
-                <ul id="file-list"></ul>
-            </div>
-            <div class="file-actions">
-                <h3>File Actions</h3>
-                <button id="cut-btn" style="display: none;">Cut Selection(s)</button>
-                <button id="paste-btn" style="display: none;">Paste Here</button>
-                <hr style="margin: 15px 0;">
-                <h3>Upload JAR File</h3>
-                <input type="file" id="file-upload-input" accept=".jar">
-                <label for="upload-dest">Destination:</label>
-                <select id="upload-dest">
-                    <option value="plugins">plugins/</option>
-                    <option value=".">minecraft/</option>
-                </select>
-                <button id="upload-btn">Upload</button>
+        <div id="files" class="tab-content">
+            <div class="file-manager">
+                <h2>File Manager</h2>
+                <div id="file-browser">
+                    <p>Current Path: <strong id="current-path"></strong></p>
+                    <ul id="file-list"></ul>
+                </div>
+                <div class="file-actions">
+                    <h3>File Actions</h3>
+                    <button id="cut-btn" style="display: none;">Cut Selection(s)</button>
+                    <button id="paste-btn" style="display: none;">Paste Here</button>
+                    <hr style="margin: 15px 0;">
+                    <h3>Upload JAR File</h3>
+                    <input type="file" id="file-upload-input" accept=".jar">
+                    <label for="upload-dest">Destination:</label>
+                    <select id="upload-dest">
+                        <option value="minecraft/plugins">minecraft/plugins/</option>
+                        <option value="minecraft">minecraft/</option>
+                    </select>
+                    <button id="upload-btn">Upload</button>
+                </div>
             </div>
         </div>
     </div>

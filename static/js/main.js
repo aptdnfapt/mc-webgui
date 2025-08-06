@@ -19,6 +19,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentPathSpan = document.getElementById('current-path');
     const fileListUl = document.getElementById('file-list');
 
+    // Tabs
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+    tabButtons.forEach(btn => btn.addEventListener('click', () => {
+        tabButtons.forEach(b => b.classList.remove('active'));
+        tabContents.forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.tab).classList.add('active');
+    }));
+
     async function postData(url, data = {}) {
         try {
             const response = await fetch(url, {
