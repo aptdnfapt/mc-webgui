@@ -30,10 +30,16 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Command to send:', command);
             const result = await postAPIData('/api/send_command', { command: command });
             console.log('Response from server:', result);
-            alert(result.message);
             commandInput.value = ''; // Clear input after sending
         } else {
-            alert('Please enter a command.');
+            console.log('Please enter a command.');
+        }
+    });
+
+    commandInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            sendCommandBtn.click();
         }
     });
 
@@ -66,11 +72,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify(data),
             });
             const result = await response.json();
-            alert(JSON.stringify(result, null, 2));
             console.log(result);
         } catch (error) {
             console.error('Error:', error);
-            alert('An error occurred. Check the console.');
         }
     }
 
@@ -211,7 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.status === 'success') {
                 renderFileList(data);
             } else {
-                alert(`Error: ${data.message}`);
+                console.error(`Error: ${data.message}`);
             }
         } catch (error) {
             console.error('Error fetching files:', error);
@@ -250,7 +254,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         if (filesToMove.length > 0) {
-            alert(`Cut ${filesToMove.length} item(s). Navigate to a new directory and click 'Paste Here'.`);
+            console.log(`Cut ${filesToMove.length} item(s). Navigate to a new directory and click 'Paste Here'.`);
             checkedBoxes.forEach(box => box.checked = false);
             updateFileActionButtons();
         }
@@ -271,7 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (failures.length > 0) {
             summary += `\n\n${failures.length} item(s) failed to move:\n` + failures.map(f => `- ${f.message}`).join('\n');
         }
-        alert(summary);
+        console.log(summary);
 
         filesToMove = [];
         fetchFiles(currentDirectory);
@@ -299,7 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: formData,
             });
             const result = await response.json();
-            alert(result.message);
+            console.log(result.message);
             if(result.status === 'success') {
                 fetchFiles(currentDirectory);
                 fileUploadInput.value = '';
