@@ -19,7 +19,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentPathSpan = document.getElementById('current-path');
     const fileListUl = document.getElementById('file-list');
 
-    // --- Helper Functions ---
     async function postData(url, data = {}) {
         try {
             const response = await fetch(url, {
@@ -52,10 +51,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function appendToLog(element, text) {
         element.textContent += text;
-        element.scrollTop = element.scrollHeight; // Auto-scroll
+        element.scrollTop = element.scrollHeight;
     }
 
-    // --- SocketIO Handlers ---
     socket.on('connect', () => {
         console.log('Connected to server');
     });
@@ -78,29 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
         appendToLog(backupOutput, msg.data);
     });
 
-    // --- Button Event Listeners ---
-    startBtn.addEventListener('click', () => postData('/api/start_server'));
-    stopBtn.addEventListener('click', () => postData('/api/stop_server'));
-    backupBtn.addEventListener('click', () => {
-        if (confirm('Are you sure you want to stop the server and run a backup?')) {
-            postData('/api/run_backup');
-        }
-    });
-
-    sendCommandBtn.addEventListener('click', () => {
-        const command = commandInput.value;
-        if (command) {
-            postData('/api/send_command', { command });
-            commandInput.value = '';
-        }
-    });
-    commandInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            sendCommandBtn.click();
-        }
-    });
-
-    // --- File Manager ---
+    // File Manager
     let currentDirectory = '.';
     let filesToMove = [];
 
@@ -114,33 +90,41 @@ document.addEventListener('DOMContentLoaded', () => {
         fileListUl.innerHTML = '';
         currentPathSpan.textContent = `~/${currentDirectory.replace(/^\.\/?/, '')}`;
 
-        // Add parent directory link if not in root
-        if (currentDirectory !== '.' && currentDirectory !== 'minecraft' && currentDirectory !== 'backup') {
+        if (currentDirectory === '.') {
+            ['minecraft', 'backup'].forEach(root => {
+                const li = document.createElement('li');
+                li.innerHTML = `<strong><a href="#" data-path="${root}">[${root}]</a></strong>`;
+                fileListUl.appendChild(li);
+            });
+        }
+
+        if (currentDirectory !== '.') {
             const parentLi = document.createElement('li');
-            const parentPath = currentDirectory.substring(0, currentDirectory.lastIndexOf('/')) || '.';
+            const parentPath = currentDirectory.includes('/') ? (currentDirectory.substring(0, currentDirectory.lastIndexOf('/')) || '.') : '.';
             parentLi.innerHTML = `<a href="#" data-path="${parentPath}">.. (Up a level)</a>`;
             fileListUl.appendChild(parentLi);
         }
 
-        data.contents.forEach(item => {
-            const li = document.createElement('li');
-            const itemFullPath = currentDirectory === '.' ? item.name : `${currentDirectory}/${item.name}`;
-            
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.className = 'file-checkbox';
-            checkbox.setAttribute('data-path', itemFullPath);
-            li.appendChild(checkbox);
+        if (data && Array.isArray(data.contents)) {
+            data.contents.forEach(item => {
+                const li = document.createElement('li');
+                const itemFullPath = currentDirectory === '.' ? item.name : `${currentDirectory}/${item.name}`;
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = 'file-checkbox';
+                checkbox.setAttribute('data-path', itemFullPath);
+                li.appendChild(checkbox);
 
-            const label = document.createElement('label');
-            if (item.is_dir) {
-                label.innerHTML = ` <strong><a href="#" data-path="${itemFullPath}">[${item.name}]</a></strong>`;
-            } else {
-                label.innerHTML = ` ${item.name}`;
-            }
-            li.appendChild(label);
-            fileListUl.appendChild(li);
-        });
+                const label = document.createElement('label');
+                if (item.is_dir) {
+                    label.innerHTML = ` <strong><a href=\"#\" data-path=\"${itemFullPath}\">[${item.name}]</a></strong>`;
+                } else {
+                    label.innerHTML = ` ${item.name}`;
+                }
+                li.appendChild(label);
+                fileListUl.appendChild(li);
+            });
+        }
         updateFileActionButtons();
     }
 
@@ -184,7 +168,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (filesToMove.length > 0) {
             alert(`Cut ${filesToMove.length} item(s). Navigate to a new directory and click 'Paste Here'.`);
-            // Uncheck boxes after cutting
             checkedBoxes.forEach(box => box.checked = false);
             updateFileActionButtons();
         }
@@ -208,7 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
         alert(summary);
 
         filesToMove = [];
-        fetchFiles(currentDirectory); // Refresh file list and buttons
+        fetchFiles(currentDirectory);
     });
 
     uploadBtn.addEventListener('click', async () => {
@@ -231,8 +214,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
             alert(result.message);
             if(result.status === 'success') {
-                fetchFiles(currentDirectory); // Refresh file list
-                fileUploadInput.value = ''; // Clear file input
+                fetchFiles(currentDirectory);
+                fileUploadInput.value = '';
             }
         } catch(error) {
             console.error('Upload Error:', error);
@@ -240,6 +223,5 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Initial load
     fetchFiles(currentDirectory);
 });
