@@ -1,6 +1,15 @@
 document.addEventListener('DOMContentLoaded', () => {
     const socket = io({ transports: ['websocket'], upgrade: false });
 
+    const tabs = document.querySelectorAll('.tab');
+    const panels = document.querySelectorAll('.panel');
+    tabs.forEach(t => t.addEventListener('click', () => {
+        tabs.forEach(b => b.classList.remove('active'));
+        panels.forEach(p => p.classList.remove('active'));
+        t.classList.add('active');
+        document.getElementById(t.dataset.tab).classList.add('active');
+    }));
+
     const consoleOutput = document.getElementById('console-output');
     const backupOutput = document.getElementById('backup-output');
     
