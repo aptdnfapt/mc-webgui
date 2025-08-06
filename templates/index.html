@@ -27,6 +27,9 @@
     .tabs{display:flex; gap:8px}
     .tab{padding:10px 14px; border:1px solid var(--stroke); border-radius:10px; color:var(--muted); background:var(--glass); backdrop-filter: blur(8px); cursor:pointer; box-shadow:var(--shadow)}
     .tab.active{color:var(--ink); border-color:var(--pri)}
+    .btn, .tab, .input, select, .file, .file-root{transition:all .15s ease}
+    .btn:hover{filter:brightness(1.05)}
+    .btn, .input, select{border:1px solid #2b3547}
     .grid{display:grid; grid-template-columns:1fr 1fr; gap:18px}
     .panel{display:none}
     .panel.active{display:block}

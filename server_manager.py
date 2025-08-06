@@ -29,9 +29,8 @@ def stop_minecraft_server():
 
 def send_minecraft_command(command):
     """Sends a custom command to the Minecraft server."""
-    # Basic sanitization to prevent command injection into the shell
-    if not command or any(c in command for c in ';|&`$()<>'):
-        return {"status": "error", "message": "Invalid command."}
+    if not command:
+        return {"status": "error", "message": "Empty command."}
     return _send_tmux_command(command)
 
 def run_backup_script():
