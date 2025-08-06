@@ -19,6 +19,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const sendCommandBtn = document.getElementById('send-command-btn');
     const commandInput = document.getElementById('command-input');
 
+    // Event Listeners for server control buttons
+    startBtn.addEventListener('click', () => postData('/api/start_server'));
+    stopBtn.addEventListener('click', () => postData('/api/stop_server'));
+    backupBtn.addEventListener('click', () => postData('/api/run_backup'));
+    sendCommandBtn.addEventListener('click', async () => {
+        const command = commandInput.value;
+        if (command) {
+            const result = await postAPIData('/api/send_command', { command: command });
+            alert(result.message);
+            commandInput.value = ''; // Clear input after sending
+        } else {
+            alert('Please enter a command.');
+        }
+    });
+
     const fileUploadInput = document.getElementById('file-upload-input');
     const uploadDestSelect = document.getElementById('upload-dest');
     const uploadBtn = document.getElementById('upload-btn');
