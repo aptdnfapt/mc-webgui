@@ -1,6 +1,7 @@
 .aider*
 
 # Environment variables
+.crush/
 .env
 
 # Python cache
