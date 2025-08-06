@@ -109,7 +109,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderFileList(data) {
         fileListUl.innerHTML = '';
-        currentPathSpan.textContent = `~/${currentDirectory.replace(/^\.\/?/, '')}`;
+        const segments = (currentDirectory === '.' ? [] : currentDirectory.split('/'));
+        const crumbs = ['<a href="#" data-path=".">~</a>'].concat(segments.map((seg, i) => {
+            const p = segments.slice(0, i+1).join('/') || '.';
+            return `<span class="muted">/</span> <a href="#" data-path="${p}">${seg}</a>`;
+        }));
+        currentPathSpan.innerHTML = crumbs.join(' ');
 
         const contents = (data && Array.isArray(data.contents)) ? data.contents : [];
 
@@ -132,7 +137,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentDirectory !== '.') {
             const parentLi = document.createElement('li');
             const parentPath = currentDirectory.includes('/') ? (currentDirectory.substring(0, currentDirectory.lastIndexOf('/')) || '.') : '.';
-            parentLi.innerHTML = `<a href=\"#\" data-path=\"${parentPath}\">.. (Up a level)</a>`;
+            const back = document.createElement('a');
+            back.href = '#'; back.dataset.path = parentPath; back.innerHTML = '← Back';
+            const row = document.createElement('div'); row.className = 'file';
+            const name = document.createElement('div'); name.className='name'; name.appendChild(back);
+            row.appendChild(name);
+            parentLi.appendChild(row);
             fileListUl.appendChild(parentLi);
         }
 
