@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const socket = io({ transports: ['websocket'], upgrade: false });
+    const socket = io();
 
     const tabs = document.querySelectorAll('.tab');
     const panels = document.querySelectorAll('.panel');
@@ -24,9 +24,12 @@ document.addEventListener('DOMContentLoaded', () => {
     stopBtn.addEventListener('click', () => postData('/api/stop_server'));
     backupBtn.addEventListener('click', () => postData('/api/run_backup'));
     sendCommandBtn.addEventListener('click', async () => {
+        console.log('Send command button clicked.');
         const command = commandInput.value;
         if (command) {
+            console.log('Command to send:', command);
             const result = await postAPIData('/api/send_command', { command: command });
+            console.log('Response from server:', result);
             alert(result.message);
             commandInput.value = ''; // Clear input after sending
         } else {
@@ -72,13 +75,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function postAPIData(url, data = {}) {
+        console.log('postAPIData called with url:', url, 'and data:', data);
         try {
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data),
             });
-            return await response.json();
+            console.log('Fetch response status:', response.status);
+            const result = await response.json();
+            console.log('Fetch response json:', result);
+            return result;
         } catch (error) {
             console.error('Error posting data:', error);
             return { status: 'error', message: 'A network error occurred while posting data.' };
