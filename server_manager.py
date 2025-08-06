@@ -10,14 +10,13 @@ START_SCRIPT_PATH = os.path.join(MINECRAFT_DIR, 'start.sh')
 TMUX_SESSION = 'mc:0.0'
 
 def _send_tmux_command(command):
-    """Helper function to send a command to the tmux session."""
     try:
-        subprocess.run(['tmux', 'send-keys', '-t', TMUX_SESSION, command, 'C-m'], check=True)
-        return {"status": "success", "message": f"Command '{command}' sent."}
+        subprocess.run(['tmux', 'send-keys', '-t', TMUX_SESSION, command, 'C-m'])
+        return {"status": "success", "message": command, "rc": 0}
     except FileNotFoundError:
-        return {"status": "error", "message": "tmux command not found. Is tmux installed and in your PATH?"}
-    except subprocess.CalledProcessError as e:
-        return {"status": "error", "message": f"Error sending command to tmux: {e}"}
+        return {"status": "error", "message": "tmux command not found. Is tmux installed and in your PATH?", "rc": 127}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 def start_minecraft_server():
     """Sends the start command to the Minecraft server tmux pane."""
@@ -28,11 +27,9 @@ def stop_minecraft_server():
     return _send_tmux_command("stop")
 
 def send_minecraft_command(command):
-    """Sends a custom command to the Minecraft server."""
-    if not command:
-        return {"status": "error", "message": "Empty command."}
+    if command is None:
+        command = ''
     return _send_tmux_command(command)
-
 def run_backup_script():
     """Executes the backup script in the background."""
     if not os.path.exists(BACKUP_SCRIPT_PATH):
