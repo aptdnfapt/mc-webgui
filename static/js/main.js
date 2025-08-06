@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const socket = io();
+    const socket = io({ transports: ['websocket'], upgrade: false });
 
     const consoleOutput = document.getElementById('console-output');
     const backupOutput = document.getElementById('backup-output');
@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- File Manager ---
-    let currentDirectory = 'minecraft';
+    let currentDirectory = '.';
     let filesToMove = [];
 
     function updateFileActionButtons() {

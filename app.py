@@ -12,8 +12,8 @@ import file_manager
 load_dotenv()
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'a_default_secret_key')
-socketio = SocketIO(app, async_mode='eventlet')
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY') or 'a_super_secret_key_that_should_be_changed'
+socketio = SocketIO(app, async_mode=os.getenv('SOCKETIO_MODE', 'threading'))
 
 # --- Path Configuration ---
 HOME_DIR = os.path.expanduser('~')
@@ -90,12 +90,10 @@ def read_log_history(log_path):
 def handle_connect():
     """Send log history to a newly connected client."""
     print('Client connected')
-    # Send Minecraft console history
     console_history = read_log_history(MINECRAFT_CONSOLE_LOG)
-    emit('console_history', {'data': console_history})
-    # Send Backup log history
+    emit('console_history', {'data': console_history}, to=request.sid)
     backup_history = read_log_history(BACKUP_LOG)
-    emit('backup_history', {'data': backup_history})
+    emit('backup_history', {'data': backup_history}, to=request.sid)
 
 @socketio.on('disconnect')
 def handle_disconnect():
@@ -106,8 +104,7 @@ if __name__ == '__main__':
     threading.Thread(target=log_streamer.stream_log_file, args=(socketio, MINECRAFT_CONSOLE_LOG, 'console_output'), daemon=True).start()
     threading.Thread(target=log_streamer.stream_log_file, args=(socketio, BACKUP_LOG, 'backup_output'), daemon=True).start()
 
-    host = os.getenv('FLASK_HOST', '127.0.0.1')
+    host = os.getenv('FLASK_HOST', '0.0.0.0')
     port = int(os.getenv('FLASK_PORT', 5000))
-    
     print(f"Starting server on http://{host}:{port}")
     socketio.run(app, host=host, port=port, use_reloader=False)
