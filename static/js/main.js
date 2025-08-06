@@ -90,41 +90,44 @@ document.addEventListener('DOMContentLoaded', () => {
         fileListUl.innerHTML = '';
         currentPathSpan.textContent = `~/${currentDirectory.replace(/^\.\/?/, '')}`;
 
+        const contents = (data && Array.isArray(data.contents)) ? data.contents : [];
+
         if (currentDirectory === '.') {
+            const names = new Set(contents.map(i => i.name));
             ['minecraft', 'backup'].forEach(root => {
-                const li = document.createElement('li');
-                li.innerHTML = `<strong><a href="#" data-path="${root}">[${root}]</a></strong>`;
-                fileListUl.appendChild(li);
+                if (!names.has(root)) {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<strong><a href=\"#\" data-path=\"${root}\">[${root}]</a></strong>`;
+                    fileListUl.appendChild(li);
+                }
             });
         }
 
         if (currentDirectory !== '.') {
             const parentLi = document.createElement('li');
             const parentPath = currentDirectory.includes('/') ? (currentDirectory.substring(0, currentDirectory.lastIndexOf('/')) || '.') : '.';
-            parentLi.innerHTML = `<a href="#" data-path="${parentPath}">.. (Up a level)</a>`;
+            parentLi.innerHTML = `<a href=\"#\" data-path=\"${parentPath}\">.. (Up a level)</a>`;
             fileListUl.appendChild(parentLi);
         }
 
-        if (data && Array.isArray(data.contents)) {
-            data.contents.forEach(item => {
-                const li = document.createElement('li');
-                const itemFullPath = currentDirectory === '.' ? item.name : `${currentDirectory}/${item.name}`;
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.className = 'file-checkbox';
-                checkbox.setAttribute('data-path', itemFullPath);
-                li.appendChild(checkbox);
+        contents.forEach(item => {
+            const li = document.createElement('li');
+            const itemFullPath = currentDirectory === '.' ? item.name : `${currentDirectory}/${item.name}`;
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.className = 'file-checkbox';
+            checkbox.setAttribute('data-path', itemFullPath);
+            li.appendChild(checkbox);
 
-                const label = document.createElement('label');
-                if (item.is_dir) {
-                    label.innerHTML = ` <strong><a href=\"#\" data-path=\"${itemFullPath}\">[${item.name}]</a></strong>`;
-                } else {
-                    label.innerHTML = ` ${item.name}`;
-                }
-                li.appendChild(label);
-                fileListUl.appendChild(li);
-            });
-        }
+            const label = document.createElement('label');
+            if (item.is_dir) {
+                label.innerHTML = ` <strong><a href=\"#\" data-path=\"${itemFullPath}\">[${item.name}]</a></strong>`;
+            } else {
+                label.innerHTML = ` ${item.name}`;
+            }
+            li.appendChild(label);
+            fileListUl.appendChild(li);
+        });
         updateFileActionButtons();
     }
 
