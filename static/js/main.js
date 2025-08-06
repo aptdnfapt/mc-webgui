@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- File Manager ---
-    let currentDirectory = '.';
+    let currentDirectory = 'minecraft';
     let filesToMove = [];
 
     function updateFileActionButtons() {
@@ -112,10 +112,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderFileList(data) {
         fileListUl.innerHTML = '';
-        currentPathSpan.textContent = `~/minecraft/${currentDirectory.replace(/^\.\/?/, '')}`;
+        currentPathSpan.textContent = `~/${currentDirectory.replace(/^\.\/?/, '')}`;
 
         // Add parent directory link if not in root
-        if (currentDirectory !== '.') {
+        if (currentDirectory !== '.' && currentDirectory !== 'minecraft' && currentDirectory !== 'backup') {
             const parentLi = document.createElement('li');
             const parentPath = currentDirectory.substring(0, currentDirectory.lastIndexOf('/')) || '.';
             parentLi.innerHTML = `<a href="#" data-path="${parentPath}">.. (Up a level)</a>`;
@@ -241,5 +241,5 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Initial load
-    fetchFiles();
+    fetchFiles(currentDirectory);
 });

@@ -12,7 +12,7 @@ This document outlines the plan to create a Flask-based web GUI for managing a M
 
 *   **Minecraft Server Path:** `~/minecraft/` (contains `paper.jar`, `start.sh`, `logs/`, etc.)
 *   **`tmux` Session Name:** `mc`
-*   **`tmux` Window/Pane for Server:** `mc:0.0` (first window, first pane)
+*   **`tmux` Window/Pane for Server:** `mc:0.0` (session `mc`, window `0`, pane `0`)
 *   **Server Start Script:** `~/minecraft/start.sh` (e.g., `java -Xmx8G -Xms8G -jar paper.jar --nogui`)
 *   **Console Output Log File:** `~/minecraft/console_output.log` (this will be created and managed by `tmux`)
 
@@ -28,11 +28,11 @@ Before starting the Flask application, ensure your Minecraft server pane in `tmu
 2.  Navigate to the pane where your Minecraft server runs (e.g., window 0, pane 0).
 3.  Execute the `pipe-pane` command (you can bind this to a key or run it manually):
     ```bash
-    tmux pipe-pane -o -t mc:0.0 'cat >> ~/minecraft/console_output.log'
+    tmux pipe-pane -o -t mc:0.0 'tee -a ~/minecraft/console_output.log'
     ```
     *   `-o`: Overwrite any existing `pipe-pane` configuration.
     *   `-t mc:0.0`: Target the specific `tmux` pane.
-    *   `'cat >> ~/minecraft/console_output.log'`: Appends all pane output to this file.
+    *   `'tee -a ~/minecraft/console_output.log'`: Uses `tee` to append all pane output to the specified file while also keeping it visible in the `tmux` pane itself.
 
 ### Automation Consideration (Future)
 

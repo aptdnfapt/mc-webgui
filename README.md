@@ -50,15 +50,15 @@ A simple Flask-based web interface to manage a Minecraft server running in a `tm
 
 ### 4. `tmux` Preparation
 
-Your Minecraft server must be running inside a `tmux` session named `mc`. The server process must be in the first pane (`mc:0.0`).
+Your Minecraft server must be running inside a `tmux` session named `mc`, in window `0`.
 
-To enable live console logging, you must run this command **once** while the `tmux` session is active:
+To enable live console logging, you must run this command **once** while the `tmux` session is active.
 
 ```bash
-tmux pipe-pane -o -t mc:0.0 'cat >> ~/minecraft/console_output.log'
+tmux pipe-pane -o -t mc:0.0 'tee -a ~/minecraft/console_output.log'
 ```
 
-This command redirects all output from the Minecraft server pane to a log file, which the web application then reads.
+This command uses `tee` to redirect all output from the Minecraft server pane to a log file, while keeping it visible in your terminal. The web application then reads this log file.
 
 ## Running the Application
 

@@ -4,34 +4,41 @@ from werkzeug.utils import secure_filename
 
 HOME_DIR = os.path.expanduser('~')
 MINECRAFT_ROOT = os.path.join(HOME_DIR, 'minecraft')
+BACKUP_DIR = os.path.join(HOME_DIR, 'backup')
 ALLOWED_UPLOAD_EXTENSIONS = {'.jar'}
-# Define safe zones for file operations
-ALLOWED_PATHS = [
-    MINECRAFT_ROOT,
-    os.path.join(MINECRAFT_ROOT, 'plugins'),
-    os.path.join(MINECRAFT_ROOT, 'old_plugins'),
-    os.path.join(MINECRAFT_ROOT, 'old_paper'),
-]
+
+# Define the root directories that are accessible.
+ALLOWED_ROOTS = [MINECRAFT_ROOT, BACKUP_DIR]
 
 def _is_path_safe(path):
     """Check if a path is within the allowed directories to prevent traversal."""
-    # Create allowed paths if they don't exist
-    for p in ALLOWED_PATHS:
+    # Ensure allowed root directories exist
+    for p in ALLOWED_ROOTS:
         os.makedirs(p, exist_ok=True)
-        
+
     abs_path = os.path.abspath(path)
-    # Ensure the path is a subdirectory of the minecraft root
-    if os.path.commonpath([abs_path, MINECRAFT_ROOT]) != MINECRAFT_ROOT:
-        return False
-    return True
+
+    # Check if the path is a child of any of the allowed roots.
+    for root in ALLOWED_ROOTS:
+        if os.path.commonpath([abs_path, root]) == root:
+            return True
+    return False
 
 def list_directory_contents(path):
-    """Lists contents of a directory if it's within the allowed paths."""
-    full_path = os.path.join(MINECRAFT_ROOT, path)
+    """Lists contents of a directory. Path is relative to the user's home directory."""
+    # Special case for the root view (~), only show the allowed directories.
+    if path == '.':
+        contents = []
+        for p in ALLOWED_ROOTS:
+            if os.path.exists(p):
+                contents.append({'name': os.path.basename(p), 'is_dir': True})
+        return {"status": "success", "contents": sorted(contents, key=lambda x: x['name'].lower())}
+
+    full_path = os.path.join(HOME_DIR, path)
 
     if not _is_path_safe(full_path):
         return {"status": "error", "message": "Access to this path is denied."}
-    
+
     if not os.path.isdir(full_path):
         return {"status": "error", "message": "Path is not a valid directory."}
 
@@ -39,18 +46,17 @@ def list_directory_contents(path):
         contents = []
         for item in os.listdir(full_path):
             item_path = os.path.join(full_path, item)
-            contents.append({
-                'name': item,
-                'is_dir': os.path.isdir(item_path)
-            })
+            # Ensure listed items don't lead to unsafe paths (e.g., via symlinks)
+            if _is_path_safe(item_path):
+                contents.append({'name': item, 'is_dir': os.path.isdir(item_path)})
         return {"status": "success", "contents": sorted(contents, key=lambda x: (not x['is_dir'], x['name'].lower()))}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
 def move_file(source, destination):
-    """Moves a file or directory from source to destination."""
-    source_path = os.path.join(MINECRAFT_ROOT, source)
-    dest_path = os.path.join(MINECRAFT_ROOT, destination)
+    """Moves a file or directory. Paths are relative to the home directory."""
+    source_path = os.path.join(HOME_DIR, source)
+    dest_path = os.path.join(HOME_DIR, destination)
 
     if not _is_path_safe(source_path) or not _is_path_safe(dest_path):
         return {"status": "error", "message": "Access denied for source or destination path."}
@@ -59,13 +65,15 @@ def move_file(source, destination):
         return {"status": "error", "message": "Source path does not exist."}
 
     try:
-        shutil.move(source_path, dest_path)
-        return {"status": "success", "message": f"Moved '{source}' to '{destination}'."}
+        # To move into a directory, the full destination path must be constructed
+        final_dest_path = os.path.join(dest_path, os.path.basename(source_path))
+        shutil.move(source_path, final_dest_path)
+        return {"status": "success", "message": f"Moved '{os.path.basename(source)}' to '{destination}'."}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
 def handle_upload(file, destination_folder):
-    """Handles file uploads, ensuring they are .jar files and saved to a safe location."""
+    """Handles file uploads. Destination is relative to the home directory."""
     if not file or not file.filename:
         return {"status": "error", "message": "No file selected."}
 
@@ -74,14 +82,13 @@ def handle_upload(file, destination_folder):
 
     if ext not in ALLOWED_UPLOAD_EXTENSIONS:
         return {"status": "error", "message": f"File type not allowed. Only {list(ALLOWED_UPLOAD_EXTENSIONS)} are permitted."}
-    
-    destination_path = os.path.join(MINECRAFT_ROOT, destination_folder)
+
+    destination_path = os.path.join(HOME_DIR, destination_folder)
 
     if not _is_path_safe(destination_path):
         return {"status": "error", "message": "Upload to this location is not allowed."}
-    
+
     try:
-        os.makedirs(destination_path, exist_ok=True)
         file.save(os.path.join(destination_path, filename))
         return {"status": "success", "message": f"File '{filename}' uploaded to '{destination_folder}'."}
     except Exception as e:
