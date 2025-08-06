@@ -21,70 +21,96 @@
         }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 0; padding: 20px; background-color: var(--bg-color); color: var(--text-color); }
         .container { max-width: 1200px; margin: auto; background: var(--container-bg); padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.4); }
-        h1, h2 { border-bottom: 2px solid var(--border-color); padding-bottom: 10px; margin-top: 0; }
-        .controls, .command-bar, .file-manager { margin-bottom: 20px; padding: 15px; border: 1px solid var(--border-color); border-radius: 5px; }
+        h1, h2, h3 { border-bottom: 2px solid var(--border-color); padding-bottom: 10px; margin-top: 0; }
+        h3 { border-bottom-width: 1px; font-size: 1.1em; }
+        .controls, .command-bar, .file-manager, .backup-section { margin-bottom: 20px; padding: 15px; border: 1px solid var(--border-color); border-radius: 5px; }
         button, input[type="text"], input[type="file"], select { padding: 10px; margin: 5px; border-radius: 5px; border: 1px solid var(--border-color); font-size: 14px; background-color: var(--input-bg); color: var(--text-color); }
         button { background-color: var(--button-bg); color: white; cursor: pointer; border: none; transition: background-color 0.2s; }
         button:hover { background-color: var(--button-hover-bg); }
         #stop-btn, #backup-btn { background-color: var(--button-danger-bg); }
         #stop-btn:hover, #backup-btn:hover { background-color: var(--button-danger-hover); }
-        .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .log-box { flex: 1; background: var(--pre-bg); color: var(--pre-color); padding: 15px; border-radius: 5px; height: 400px; overflow-y: auto; white-space: pre-wrap; font-family: "SF Mono", "Fira Code", "Consolas", monospace; font-size: 13px; line-height: 1.5; }
+        .log-box { background: var(--pre-bg); color: var(--pre-color); padding: 15px; border-radius: 5px; height: 500px; overflow-y: auto; white-space: pre-wrap; font-family: "SF Mono", "Fira Code", "Consolas", monospace; font-size: 13px; line-height: 1.5; }
         #file-browser ul { list-style: none; padding: 0; }
-        #file-browser li { padding: 4px; border-radius: 4px; cursor: pointer; }
-        #file-browser li:hover { background-color: var(--border-color); }
+        #file-browser li { padding: 4px; border-radius: 4px; }
         #file-browser a { text-decoration: none; color: var(--link-color); }
+        #file-browser li:hover { background-color: var(--border-color); }
         .file-actions { margin-top: 15px; }
-        @media (max-width: 800px) { .grid-container { grid-template-columns: 1fr; } }
+        
+        /* Tab Styles */
+        .tab-nav { border-bottom: 2px solid var(--border-color); margin-bottom: 20px; }
+        .tab-btn { background: none; border: none; color: var(--text-color); padding: 10px 15px; cursor: pointer; font-size: 16px; border-bottom: 3px solid transparent; }
+        .tab-btn.active { color: var(--button-bg); border-bottom-color: var(--button-bg); font-weight: bold; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Minecraft Server Control Panel</h1>
 
-        <div class="controls">
-            <h2>Server Actions</h2>
-            <button id="start-btn">Start Server</button>
-            <button id="stop-btn">Stop Server</button>
-            <button id="backup-btn">Run Backup</button>
+        <nav class="tab-nav">
+            <button class="tab-btn active" data-tab="server">Server</button>
+            <button class="tab-btn" data-tab="console">Console</button>
+            <button class="tab-btn" data-tab="backups">Backups</button>
+            <button class="tab-btn" data-tab="file-manager">File Manager</button>
+        </nav>
+
+        <!-- Tab 1: Server -->
+        <div id="server" class="tab-content active">
+            <div class="controls">
+                <h2>Server Actions</h2>
+                <button id="start-btn">Start Server</button>
+                <button id="stop-btn">Stop Server</button>
+            </div>
+            <div class="command-bar">
+                <h2>Send Command</h2>
+                <input type="text" id="command-input" placeholder="e.g., say hello world" style="width: calc(100% - 100px);">
+                <button id="send-command-btn">Send</button>
+            </div>
         </div>
 
-        <div class="command-bar">
-            <h2>Send Command</h2>
-            <input type="text" id="command-input" placeholder="e.g., say hello world" size="40">
-            <button id="send-command-btn">Send</button>
-        </div>
-        
-        <div class="grid-container">
-            <div class="log-wrapper">
+        <!-- Tab 2: Console -->
+        <div id="console" class="tab-content">
+            <div class="console-wrapper">
                 <h2>Minecraft Console</h2>
                 <div id="console-output" class="log-box"></div>
             </div>
-            <div class="log-wrapper">
-                <h2>Backup Log</h2>
-                <div id="backup-output" class="log-box"></div>
+        </div>
+
+        <!-- Tab 3: Backups -->
+        <div id="backups" class="tab-content">
+            <div class="backup-section">
+                <h2>Backups</h2>
+                <button id="backup-btn">Run Backup</button>
+                <div class="log-wrapper" style="margin-top: 15px;">
+                    <h3>Backup Log</h3>
+                    <div id="backup-output" class="log-box" style="height: 250px;"></div>
+                </div>
             </div>
         </div>
 
-        <div class="file-manager">
-            <h2>File Manager</h2>
-            <div id="file-browser">
-                <p>Current Path: <strong id="current-path"></strong></p>
-                <ul id="file-list"></ul>
-            </div>
-            <div class="file-actions">
-                <h3>File Actions</h3>
-                <button id="cut-btn" style="display: none;">Cut Selection(s)</button>
-                <button id="paste-btn" style="display: none;">Paste Here</button>
-                <hr style="margin: 15px 0;">
-                <h3>Upload JAR File</h3>
-                <input type="file" id="file-upload-input" accept=".jar">
-                <label for="upload-dest">Destination:</label>
-                <select id="upload-dest">
-                    <option value="plugins">plugins/</option>
-                    <option value=".">minecraft/</option>
-                </select>
-                <button id="upload-btn">Upload</button>
+        <!-- Tab 4: File Manager -->
+        <div id="file-manager" class="tab-content">
+            <div class="file-manager">
+                <h2>File Manager</h2>
+                <div id="file-browser">
+                    <p>Current Path: <strong id="current-path"></strong></p>
+                    <ul id="file-list"></ul>
+                </div>
+                <div class="file-actions">
+                    <h3>File Actions</h3>
+                    <button id="cut-btn" style="display: none;">Cut Selection(s)</button>
+                    <button id="paste-btn" style="display: none;">Paste Here</button>
+                    <hr style="margin: 15px 0; border-color: var(--border-color);">
+                    <h3>Upload JAR File</h3>
+                    <input type="file" id="file-upload-input" accept=".jar">
+                    <label for="upload-dest">Destination:</label>
+                    <select id="upload-dest">
+                        <option value="minecraft/plugins">minecraft/plugins/</option>
+                        <option value="minecraft">minecraft/</option>
+                    </select>
+                    <button id="upload-btn">Upload</button>
+                </div>
             </div>
         </div>
     </div>

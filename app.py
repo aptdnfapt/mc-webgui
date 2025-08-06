@@ -1,5 +1,4 @@
 import os
-import threading
 from flask import Flask, render_template, request, jsonify
 from flask_socketio import SocketIO, emit
 from dotenv import load_dotenv
@@ -17,7 +16,7 @@ socketio = SocketIO(app, async_mode='eventlet')
 
 # --- Path Configuration ---
 HOME_DIR = os.path.expanduser('~')
-MINECRAFT_CONSOLE_LOG = os.path.join(HOME_DIR, 'minecraft', 'console_output.log')
+MINECRAFT_CONSOLE_LOG = os.path.join(HOME_DIR, 'minecraft', 'logs', 'latest.log')
 BACKUP_DIR = os.path.join(HOME_DIR, 'backup')
 BACKUP_LOG = os.path.join(BACKUP_DIR, 'backup_latest.log')
 
@@ -71,16 +70,17 @@ def upload_file_route():
     if 'file' not in request.files:
         return jsonify({"status": "error", "message": "No file part in request."})
     file = request.files['file']
-    destination = request.form.get('destination', 'plugins') # Default to plugins folder
+    destination = request.form.get('destination', 'minecraft/plugins') # Default to plugins folder
     result = file_manager.handle_upload(file, destination)
     return jsonify(result)
 
 # --- SocketIO Event Handlers ---
 def read_log_history(log_path):
-    """Reads the entire content of a log file."""
+    """Reads the entire content of a log file, cleaning ANSI codes."""
     try:
-        with open(log_path, 'r') as f:
-            return f.read()
+        with open(log_path, 'r', encoding='utf-8', errors='ignore') as f:
+            content = f.read()
+            return log_streamer.clean_ansi(content)
     except FileNotFoundError:
         return f"Log file not found: {log_path}\n"
     except Exception as e:
@@ -102,9 +102,9 @@ def handle_disconnect():
     print('Client disconnected')
 
 if __name__ == '__main__':
-    # Start background threads for log streaming
-    threading.Thread(target=log_streamer.stream_log_file, args=(socketio, MINECRAFT_CONSOLE_LOG, 'console_output'), daemon=True).start()
-    threading.Thread(target=log_streamer.stream_log_file, args=(socketio, BACKUP_LOG, 'backup_output'), daemon=True).start()
+    # Start background tasks for log streaming using socketio's runner
+    socketio.start_background_task(log_streamer.stream_log_file, socketio, MINECRAFT_CONSOLE_LOG, 'console_output')
+    socketio.start_background_task(log_streamer.stream_log_file, socketio, BACKUP_LOG, 'backup_output')
 
     host = os.getenv('FLASK_HOST', '127.0.0.1')
     port = int(os.getenv('FLASK_PORT', 5000))
