@@ -1,0 +1,245 @@
+document.addEventListener('DOMContentLoaded', () => {
+    const socket = io();
+
+    const consoleOutput = document.getElementById('console-output');
+    const backupOutput = document.getElementById('backup-output');
+    
+    const startBtn = document.getElementById('start-btn');
+    const stopBtn = document.getElementById('stop-btn');
+    const backupBtn = document.getElementById('backup-btn');
+    const sendCommandBtn = document.getElementById('send-command-btn');
+    const commandInput = document.getElementById('command-input');
+
+    const fileUploadInput = document.getElementById('file-upload-input');
+    const uploadDestSelect = document.getElementById('upload-dest');
+    const uploadBtn = document.getElementById('upload-btn');
+    const cutBtn = document.getElementById('cut-btn');
+    const pasteBtn = document.getElementById('paste-btn');
+    
+    const currentPathSpan = document.getElementById('current-path');
+    const fileListUl = document.getElementById('file-list');
+
+    // --- Helper Functions ---
+    async function postData(url, data = {}) {
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            });
+            const result = await response.json();
+            alert(result.message);
+            console.log(result);
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred. Check the console.');
+        }
+    }
+
+    async function postAPIData(url, data = {}) {
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            });
+            return await response.json();
+        } catch (error) {
+            console.error('Error posting data:', error);
+            return { status: 'error', message: 'A network error occurred while posting data.' };
+        }
+    }
+    
+    function appendToLog(element, text) {
+        element.textContent += text;
+        element.scrollTop = element.scrollHeight; // Auto-scroll
+    }
+
+    // --- SocketIO Handlers ---
+    socket.on('connect', () => {
+        console.log('Connected to server');
+    });
+
+    socket.on('console_history', (msg) => {
+        consoleOutput.textContent = msg.data;
+        consoleOutput.scrollTop = consoleOutput.scrollHeight;
+    });
+
+    socket.on('backup_history', (msg) => {
+        backupOutput.textContent = msg.data;
+        backupOutput.scrollTop = backupOutput.scrollHeight;
+    });
+
+    socket.on('console_output', (msg) => {
+        appendToLog(consoleOutput, msg.data);
+    });
+
+    socket.on('backup_output', (msg) => {
+        appendToLog(backupOutput, msg.data);
+    });
+
+    // --- Button Event Listeners ---
+    startBtn.addEventListener('click', () => postData('/api/start_server'));
+    stopBtn.addEventListener('click', () => postData('/api/stop_server'));
+    backupBtn.addEventListener('click', () => {
+        if (confirm('Are you sure you want to stop the server and run a backup?')) {
+            postData('/api/run_backup');
+        }
+    });
+
+    sendCommandBtn.addEventListener('click', () => {
+        const command = commandInput.value;
+        if (command) {
+            postData('/api/send_command', { command });
+            commandInput.value = '';
+        }
+    });
+    commandInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            sendCommandBtn.click();
+        }
+    });
+
+    // --- File Manager ---
+    let currentDirectory = '.';
+    let filesToMove = [];
+
+    function updateFileActionButtons() {
+        const checkedBoxes = document.querySelectorAll('.file-checkbox:checked');
+        cutBtn.style.display = checkedBoxes.length > 0 ? 'inline-block' : 'none';
+        pasteBtn.style.display = filesToMove.length > 0 ? 'inline-block' : 'none';
+    }
+
+    function renderFileList(data) {
+        fileListUl.innerHTML = '';
+        currentPathSpan.textContent = `~/minecraft/${currentDirectory.replace(/^\.\/?/, '')}`;
+
+        // Add parent directory link if not in root
+        if (currentDirectory !== '.') {
+            const parentLi = document.createElement('li');
+            const parentPath = currentDirectory.substring(0, currentDirectory.lastIndexOf('/')) || '.';
+            parentLi.innerHTML = `<a href="#" data-path="${parentPath}">.. (Up a level)</a>`;
+            fileListUl.appendChild(parentLi);
+        }
+
+        data.contents.forEach(item => {
+            const li = document.createElement('li');
+            const itemFullPath = currentDirectory === '.' ? item.name : `${currentDirectory}/${item.name}`;
+            
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.className = 'file-checkbox';
+            checkbox.setAttribute('data-path', itemFullPath);
+            li.appendChild(checkbox);
+
+            const label = document.createElement('label');
+            if (item.is_dir) {
+                label.innerHTML = ` <strong><a href="#" data-path="${itemFullPath}">[${item.name}]</a></strong>`;
+            } else {
+                label.innerHTML = ` ${item.name}`;
+            }
+            li.appendChild(label);
+            fileListUl.appendChild(li);
+        });
+        updateFileActionButtons();
+    }
+
+    async function fetchFiles(path = '.') {
+        currentDirectory = path;
+        try {
+            const response = await fetch(`/api/files?path=${encodeURIComponent(path)}`);
+            const data = await response.json();
+            if (data.status === 'success') {
+                renderFileList(data);
+            } else {
+                alert(`Error: ${data.message}`);
+            }
+        } catch (error) {
+            console.error('Error fetching files:', error);
+            alert('Could not fetch file list.');
+        }
+    }
+
+    fileListUl.addEventListener('click', (e) => {
+        const link = e.target.closest('a');
+        if (link) {
+            e.preventDefault();
+            const path = link.getAttribute('data-path');
+            fetchFiles(path);
+        }
+    });
+
+    fileListUl.addEventListener('change', (e) => {
+        if (e.target.classList.contains('file-checkbox')) {
+            updateFileActionButtons();
+        }
+    });
+
+    cutBtn.addEventListener('click', () => {
+        filesToMove = [];
+        const checkedBoxes = document.querySelectorAll('.file-checkbox:checked');
+        checkedBoxes.forEach(box => {
+            filesToMove.push(box.getAttribute('data-path'));
+        });
+        
+        if (filesToMove.length > 0) {
+            alert(`Cut ${filesToMove.length} item(s). Navigate to a new directory and click 'Paste Here'.`);
+            // Uncheck boxes after cutting
+            checkedBoxes.forEach(box => box.checked = false);
+            updateFileActionButtons();
+        }
+    });
+
+    pasteBtn.addEventListener('click', async () => {
+        if (filesToMove.length === 0) return;
+
+        const destination = currentDirectory;
+        const promises = filesToMove.map(source => postAPIData('/api/move', { source, destination }));
+        
+        const results = await Promise.all(promises);
+        
+        const successes = results.filter(r => r.status === 'success').length;
+        const failures = results.filter(r => r.status !== 'success');
+        
+        let summary = `${successes} item(s) moved successfully.`;
+        if (failures.length > 0) {
+            summary += `\n\n${failures.length} item(s) failed to move:\n` + failures.map(f => `- ${f.message}`).join('\n');
+        }
+        alert(summary);
+
+        filesToMove = [];
+        fetchFiles(currentDirectory); // Refresh file list and buttons
+    });
+
+    uploadBtn.addEventListener('click', async () => {
+        const file = fileUploadInput.files[0];
+        const destination = uploadDestSelect.value;
+        if (!file) {
+            alert('Please select a file to upload.');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('destination', destination);
+
+        try {
+            const response = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData,
+            });
+            const result = await response.json();
+            alert(result.message);
+            if(result.status === 'success') {
+                fetchFiles(currentDirectory); // Refresh file list
+                fileUploadInput.value = ''; // Clear file input
+            }
+        } catch(error) {
+            console.error('Upload Error:', error);
+            alert('An error occurred during upload.');
+        }
+    });
+
+    // Initial load
+    fetchFiles();
+});
