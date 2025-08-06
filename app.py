@@ -17,7 +17,7 @@ socketio = SocketIO(app, async_mode=os.getenv('SOCKETIO_MODE', 'threading'))
 
 # --- Path Configuration ---
 HOME_DIR = os.path.expanduser('~')
-MINECRAFT_CONSOLE_LOG = os.path.join(HOME_DIR, 'minecraft', 'console_output.log')
+MINECRAFT_CONSOLE_LOG = os.path.join(HOME_DIR, 'minecraft', 'logs', 'latest.log')
 BACKUP_DIR = os.path.join(HOME_DIR, 'backup')
 BACKUP_LOG = os.path.join(BACKUP_DIR, 'backup_latest.log')
 
@@ -77,10 +77,11 @@ def upload_file_route():
 
 # --- SocketIO Event Handlers ---
 def read_log_history(log_path):
-    """Reads the entire content of a log file."""
+    """Reads the entire content of a log file, cleaning ANSI codes."""
     try:
-        with open(log_path, 'r') as f:
-            return f.read()
+        with open(log_path, 'r', encoding='utf-8', errors='ignore') as f:
+            content = f.read()
+            return log_streamer.clean_ansi(content)
     except FileNotFoundError:
         return f"Log file not found: {log_path}\n"
     except Exception as e:
