@@ -10,13 +10,31 @@ START_SCRIPT_PATH = os.path.join(MINECRAFT_DIR, 'start.sh')
 TMUX_SESSION = 'mc:0.0'
 
 def _send_tmux_command(command):
+    """Helper function to send a command to the tmux session with detailed debugging."""
     try:
-        subprocess.run(['tmux', 'send-keys', '-t', TMUX_SESSION, command, 'C-m'])
-        return {"status": "success", "message": command, "rc": 0}
+        # Using Popen to capture stdout and stderr
+        process = subprocess.Popen(
+            ['tmux', 'send-keys', '-t', TMUX_SESSION, command, 'C-m'],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        stdout, stderr = process.communicate()
+        
+        if process.returncode != 0:
+            return {
+                "status": "error", 
+                "message": f"tmux command failed with return code {process.returncode}.",
+                "stdout": stdout,
+                "stderr": stderr
+            }
+        
+        return {"status": "success", "message": f"Command '{command}' sent."}
+        
     except FileNotFoundError:
-        return {"status": "error", "message": "tmux command not found. Is tmux installed and in your PATH?", "rc": 127}
+        return {"status": "error", "message": "tmux command not found. Is tmux installed and in your PATH?"}
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": f"An unexpected error occurred: {e}"}
 
 def start_minecraft_server():
     """Sends the start command to the Minecraft server tmux pane."""

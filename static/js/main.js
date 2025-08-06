@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify(data),
             });
             const result = await response.json();
-            alert(result.message);
+            alert(JSON.stringify(result, null, 2));
             console.log(result);
         } catch (error) {
             console.error('Error:', error);
