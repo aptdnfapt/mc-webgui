@@ -1,5 +1,6 @@
 import os
 import threading
+import time
 from flask import Flask, render_template, request, jsonify
 from flask_socketio import SocketIO, emit
 from dotenv import load_dotenv
@@ -49,6 +50,11 @@ def send_command_route():
     result = server_manager.send_minecraft_command(command)
     return jsonify(result)
 
+@app.route('/api/server_status', methods=['GET'])
+def server_status_route():
+    is_running = server_manager.is_server_running()
+    return jsonify({"status": "success", "is_running": is_running})
+
 @app.route('/api/run_backup', methods=['POST'])
 def run_backup_route():
     if not backup_lock.acquire(blocking=False):
@@ -92,6 +98,23 @@ def upload_file_route():
     return jsonify(result)
 
 # --- SocketIO Event Handlers ---
+def get_system_uptime():
+    """Reads system uptime from /proc/uptime. Returns seconds as float or None."""
+    try:
+        with open('/proc/uptime', 'r') as f:
+            uptime_seconds = float(f.readline().split()[0])
+            return uptime_seconds
+    except (FileNotFoundError, IndexError, ValueError):
+        return None
+
+def system_uptime_emitter(socketio):
+    """Periodically sends system uptime to clients."""
+    while True:
+        uptime = get_system_uptime()
+        if uptime is not None:
+            socketio.emit('system_uptime', {'uptime': uptime})
+        time.sleep(1) # Update every second
+
 def read_log_history(log_path):
     """Reads the entire content of a log file, cleaning ANSI codes."""
     try:
@@ -120,6 +143,7 @@ if __name__ == '__main__':
     # Start background threads for log streaming
     threading.Thread(target=log_streamer.stream_log_file, args=(socketio, MINECRAFT_CONSOLE_LOG, 'console_output'), daemon=True).start()
     threading.Thread(target=log_streamer.stream_log_file, args=(socketio, BACKUP_LOG, 'backup_output'), daemon=True).start()
+    threading.Thread(target=system_uptime_emitter, args=(socketio,), daemon=True).start()
 
     host = os.getenv('FLASK_HOST', '0.0.0.0')
     port = int(os.getenv('FLASK_PORT', 5000))

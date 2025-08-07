@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const consoleOutput = document.getElementById('console-output');
     const backupOutput = document.getElementById('backup-output');
+    const uptimeClock = document.getElementById('uptime-clock');
     
     const startBtn = document.getElementById('start-btn');
     const stopBtn = document.getElementById('stop-btn');
@@ -20,8 +21,37 @@ document.addEventListener('DOMContentLoaded', () => {
     const commandInput = document.getElementById('command-input');
 
     // Event Listeners for server control buttons
-    startBtn.addEventListener('click', () => postData('/api/start_server'));
-    stopBtn.addEventListener('click', () => postData('/api/stop_server'));
+    async function updateServerStatus() {
+        try {
+            const response = await fetch('/api/server_status');
+            const data = await response.json();
+            if (data.status === 'success') {
+                startBtn.disabled = data.is_running;
+                stopBtn.disabled = !data.is_running;
+            } else {
+                console.error('Could not get server status:', data.message);
+                // Disable both if status is uncertain
+                startBtn.disabled = true;
+                stopBtn.disabled = true;
+            }
+        } catch (error) {
+            console.error('Error fetching server status:', error);
+            startBtn.disabled = true;
+            stopBtn.disabled = true;
+        }
+    }
+
+    startBtn.addEventListener('click', async () => {
+        startBtn.disabled = true; // Immediately disable to prevent double clicks
+        await postData('/api/start_server');
+        setTimeout(updateServerStatus, 2000); // Re-check status after a delay
+    });
+
+    stopBtn.addEventListener('click', async () => {
+        stopBtn.disabled = true; // Immediately disable to prevent double clicks
+        await postData('/api/stop_server');
+        setTimeout(updateServerStatus, 2000); // Re-check status after a delay
+    });
     backupBtn.addEventListener('click', async () => {
         if (confirm("Are you sure you want to start a new backup? The server will be stopped temporarily.")) {
             backupBtn.disabled = true;
@@ -142,6 +172,29 @@ document.addEventListener('DOMContentLoaded', () => {
         if (msg.status === 'finished') {
             console.log('Backup process finished.');
             backupBtn.disabled = false;
+        }
+    });
+
+    function formatUptime(totalSeconds) {
+        const days = Math.floor(totalSeconds / 86400);
+        totalSeconds %= 86400;
+        const hours = Math.floor(totalSeconds / 3600);
+        totalSeconds %= 3600;
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = Math.floor(totalSeconds % 60);
+
+        const pad = (num) => String(num).padStart(2, '0');
+
+        let uptimeString = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+        if (days > 0) {
+            uptimeString = `${days}d ${uptimeString}`;
+        }
+        return uptimeString;
+    }
+
+    socket.on('system_uptime', (data) => {
+        if (uptimeClock && data.uptime) {
+            uptimeClock.textContent = formatUptime(data.uptime);
         }
     });
 
@@ -391,4 +444,5 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     fetchFiles(currentDirectory);
+    updateServerStatus(); // Check server status on page load
 });

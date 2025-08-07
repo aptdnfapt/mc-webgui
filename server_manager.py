@@ -74,3 +74,22 @@ def run_backup_script():
         return {"status": "success", "message": "Backup script completed successfully."}
     except Exception as e:
         return {"status": "error", "message": f"Failed to run backup script: {e}"}
+
+def is_server_running():
+    """Checks if the Minecraft server (paper.jar) process is running."""
+    # This uses pgrep to find a process whose command line matches 'paper.jar'.
+    # pgrep returns an exit code of 0 if a process is found, and 1 otherwise.
+    command = "pgrep -f paper.jar"
+    try:
+        # We run the command and check the return code.
+        # We redirect stdout/stderr to DEVNULL as we don't need the PID, just its existence.
+        # check=True makes subprocess.run raise CalledProcessError on a non-zero exit code.
+        subprocess.run(command, shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return True
+    except subprocess.CalledProcessError:
+        # This exception occurs if pgrep returns a non-zero exit code (e.g., process not found).
+        return False
+    except FileNotFoundError:
+        # This occurs if pgrep is not installed on the system.
+        print("Warning: 'pgrep' command not found. Cannot determine server status reliably.")
+        return False
