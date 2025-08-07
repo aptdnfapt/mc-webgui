@@ -88,6 +88,13 @@ def move_file_route():
     result = file_manager.move_file(source, destination)
     return jsonify(result)
 
+@app.route('/api/rename', methods=['POST'])
+def rename_item_route():
+    old_path = request.json.get('old_path')
+    new_name = request.json.get('new_name')
+    result = file_manager.rename_item(old_path, new_name)
+    return jsonify(result)
+
 @app.route('/api/upload', methods=['POST'])
 def upload_file_route():
     if 'file' not in request.files:

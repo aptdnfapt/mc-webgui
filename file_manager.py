@@ -72,6 +72,36 @@ def move_file(source, destination):
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+def rename_item(old_path_relative, new_name):
+    """Renames a file or directory. Path is relative to the home directory."""
+    # Security: new_name should not contain path separators.
+    if '/' in new_name or '\\' in new_name or '..' in new_name:
+        return {"status": "error", "message": "Invalid characters in new name."}
+
+    old_path_abs = os.path.join(HOME_DIR, old_path_relative)
+    
+    if not _is_path_safe(old_path_abs):
+        return {"status": "error", "message": "Access denied for source path."}
+    
+    if not os.path.exists(old_path_abs):
+        return {"status": "error", "message": "Source path does not exist."}
+
+    # Construct the new absolute path
+    new_path_abs = os.path.join(os.path.dirname(old_path_abs), new_name)
+
+    # Check if the new path is also safe
+    if not _is_path_safe(new_path_abs):
+        return {"status": "error", "message": "Access denied for destination path."}
+
+    if os.path.exists(new_path_abs):
+        return {"status": "error", "message": "An item with the new name already exists."}
+    
+    try:
+        os.rename(old_path_abs, new_path_abs)
+        return {"status": "success", "message": f"Renamed to '{new_name}'."}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 def handle_upload(file, destination_folder):
     """Handles file uploads. Destination is relative to the home directory."""
     if not file or not file.filename:

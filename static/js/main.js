@@ -88,6 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const fileUploadInput = document.getElementById('file-upload-input');
     const uploadDestSelect = document.getElementById('upload-dest');
     const uploadBtn = document.getElementById('upload-btn');
+    const renameBtn = document.getElementById('rename-btn');
     const cutBtn = document.getElementById('cut-btn');
     const pasteBtn = document.getElementById('paste-btn');
     const cancelMoveBtn = document.getElementById('cancel-move-btn');
@@ -209,12 +210,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (filesToMove.length > 0) {
             // Cut mode is active
             cutBtn.style.display = 'none';
+            renameBtn.style.display = 'none';
             pasteBtn.style.display = 'inline-block';
             cancelMoveBtn.style.display = 'inline-block';
             allCheckBoxes.forEach(cb => { cb.disabled = true; cb.checked = false; });
         } else {
             // Not in cut mode
             cutBtn.style.display = checkedBoxes.length > 0 ? 'inline-block' : 'none';
+            renameBtn.style.display = checkedBoxes.length === 1 ? 'inline-block' : 'none';
             pasteBtn.style.display = 'none';
             cancelMoveBtn.style.display = 'none';
             allCheckBoxes.forEach(cb => { cb.disabled = false; });
@@ -344,6 +347,23 @@ document.addEventListener('DOMContentLoaded', () => {
         if (filesToMove.length > 0) {
             console.log(`Cut ${filesToMove.length} item(s). Navigate to a new directory and click 'Paste'.`);
             updateFileActionButtons();
+        }
+    });
+
+    renameBtn.addEventListener('click', async () => {
+        const checkedBox = document.querySelector('.file-checkbox:checked');
+        const oldPath = checkedBox.getAttribute('data-path');
+        const oldName = oldPath.split('/').pop();
+
+        const newName = prompt('Enter new name for the item:', oldName);
+
+        if (newName && newName.trim() && newName !== oldName) {
+            const result = await postAPIData('/api/rename', { old_path: oldPath, new_name: newName.trim() });
+            if (result.status === 'success') {
+                fetchFiles(currentDirectory);
+            } else {
+                alert(`Error: ${result.message}`);
+            }
         }
     });
 
