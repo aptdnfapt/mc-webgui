@@ -60,6 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const uploadBtn = document.getElementById('upload-btn');
     const cutBtn = document.getElementById('cut-btn');
     const pasteBtn = document.getElementById('paste-btn');
+    const cancelMoveBtn = document.getElementById('cancel-move-btn');
     
     const currentPathSpan = document.getElementById('current-path');
     const fileListUl = document.getElementById('file-list');
@@ -150,8 +151,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateFileActionButtons() {
         const checkedBoxes = document.querySelectorAll('.file-checkbox:checked');
-        cutBtn.style.display = checkedBoxes.length > 0 ? 'inline-block' : 'none';
-        pasteBtn.style.display = filesToMove.length > 0 ? 'inline-block' : 'none';
+        const allCheckBoxes = document.querySelectorAll('.file-checkbox');
+
+        if (filesToMove.length > 0) {
+            // Cut mode is active
+            cutBtn.style.display = 'none';
+            pasteBtn.style.display = 'inline-block';
+            cancelMoveBtn.style.display = 'inline-block';
+            allCheckBoxes.forEach(cb => { cb.disabled = true; cb.checked = false; });
+        } else {
+            // Not in cut mode
+            cutBtn.style.display = checkedBoxes.length > 0 ? 'inline-block' : 'none';
+            pasteBtn.style.display = 'none';
+            cancelMoveBtn.style.display = 'none';
+            allCheckBoxes.forEach(cb => { cb.disabled = false; });
+        }
     }
 
     function renderFileList(data) {
@@ -275,8 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         if (filesToMove.length > 0) {
-            console.log(`Cut ${filesToMove.length} item(s). Navigate to a new directory and click 'Paste Here'.`);
-            checkedBoxes.forEach(box => box.checked = false);
+            console.log(`Cut ${filesToMove.length} item(s). Navigate to a new directory and click 'Paste'.`);
             updateFileActionButtons();
         }
     });
@@ -302,11 +315,17 @@ document.addEventListener('DOMContentLoaded', () => {
         fetchFiles(currentDirectory);
     });
 
+    cancelMoveBtn.addEventListener('click', () => {
+        filesToMove = [];
+        console.log('Move operation cancelled.');
+        updateFileActionButtons();
+    });
+
     fileUploadInput.addEventListener('change', () => {
         chosenFile.textContent = fileUploadInput.files[0] ? fileUploadInput.files[0].name : '';
     });
 
-    uploadBtn.addEventListener('click', async () => {
+    uploadBtn.addEventListener('click', () => {
         const file = fileUploadInput.files[0];
         const destination = uploadDestSelect.value;
         if (!file) {
@@ -318,22 +337,57 @@ document.addEventListener('DOMContentLoaded', () => {
         formData.append('file', file);
         formData.append('destination', destination);
 
-        try {
-            const response = await fetch('/api/upload', {
-                method: 'POST',
-                body: formData,
-            });
-            const result = await response.json();
-            console.log(result.message);
-            if(result.status === 'success') {
-                fetchFiles(currentDirectory);
-                fileUploadInput.value = '';
-                chosenFile.textContent = '';
+        const xhr = new XMLHttpRequest();
+        const progressContainer = document.getElementById('upload-progress-container');
+        const progressBar = document.getElementById('upload-progress');
+
+        xhr.open('POST', '/api/upload', true);
+
+        xhr.upload.onprogress = function (e) {
+            if (e.lengthComputable) {
+                const percentComplete = (e.loaded / e.total) * 100;
+                progressBar.value = percentComplete;
             }
-        } catch(error) {
-            console.error('Upload Error:', error);
-            alert('An error occurred during upload.');
-        }
+        };
+
+        xhr.onloadstart = function () {
+            progressContainer.style.display = 'block';
+            progressBar.value = 0;
+            uploadBtn.disabled = true;
+        };
+
+        xhr.onload = function () {
+            progressContainer.style.display = 'none';
+            uploadBtn.disabled = false;
+            if (xhr.status === 200) {
+                try {
+                    const result = JSON.parse(xhr.responseText);
+                    console.log(result.message);
+                    if (result.status === 'success') {
+                        fetchFiles(destination); // Refresh the destination directory
+                        fileUploadInput.value = '';
+                        chosenFile.textContent = '';
+                    } else {
+                        alert('Upload failed: ' + result.message);
+                    }
+                } catch (e) {
+                    console.error('Error parsing server response:', e);
+                    alert('An unexpected error occurred during upload (invalid server response).');
+                }
+            } else {
+                console.error('Upload Error:', xhr.status, xhr.statusText);
+                alert(`An error occurred during upload. Server responded with status ${xhr.status}.`);
+            }
+        };
+
+        xhr.onerror = function () {
+            progressContainer.style.display = 'none';
+            uploadBtn.disabled = false;
+            console.error('Upload Error:', xhr.statusText);
+            alert('A network error occurred during upload.');
+        };
+
+        xhr.send(formData);
     });
 
     fetchFiles(currentDirectory);
