@@ -77,9 +77,11 @@ def run_backup_script():
 
 def is_server_running():
     """Checks if the Minecraft server (paper.jar) process is running."""
-    # This uses pgrep to find a process whose command line matches 'paper.jar'.
+    # This uses pgrep to find a process whose command line contains 'paper.jar'.
+    # The '[p]aper.jar' pattern is a trick to prevent the pgrep command itself
+    # from matching, which would cause a false positive.
     # pgrep returns an exit code of 0 if a process is found, and 1 otherwise.
-    command = "pgrep -f paper.jar"
+    command = "pgrep -f '[p]aper.jar'"
     try:
         # We run the command and check the return code.
         # We redirect stdout/stderr to DEVNULL as we don't need the PID, just its existence.
