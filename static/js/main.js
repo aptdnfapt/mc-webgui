@@ -206,6 +206,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateFileActionButtons() {
         const checkedBoxes = document.querySelectorAll('.file-checkbox:checked');
         const allCheckBoxes = document.querySelectorAll('.file-checkbox');
+        const moveToPluginsBtn = document.getElementById('move-to-plugins');
+        const moveToOldPluginsBtn = document.getElementById('move-to-old-plugins');
 
         if (filesToMove.length > 0) {
             // Cut mode is active
@@ -213,6 +215,8 @@ document.addEventListener('DOMContentLoaded', () => {
             renameBtn.style.display = 'none';
             pasteBtn.style.display = 'inline-block';
             cancelMoveBtn.style.display = 'inline-block';
+            moveToPluginsBtn.style.display = 'inline-block';
+            moveToOldPluginsBtn.style.display = 'inline-block';
             allCheckBoxes.forEach(cb => { cb.disabled = true; cb.checked = false; });
         } else {
             // Not in cut mode
@@ -220,6 +224,8 @@ document.addEventListener('DOMContentLoaded', () => {
             renameBtn.style.display = checkedBoxes.length === 1 ? 'inline-block' : 'none';
             pasteBtn.style.display = 'none';
             cancelMoveBtn.style.display = 'none';
+            moveToPluginsBtn.style.display = 'none';
+            moveToOldPluginsBtn.style.display = 'none';
             allCheckBoxes.forEach(cb => { cb.disabled = false; });
         }
     }
@@ -394,6 +400,35 @@ document.addEventListener('DOMContentLoaded', () => {
         updateFileActionButtons();
     });
 
+    // Add event listeners for quick navigation buttons
+    document.getElementById('goto-plugins').addEventListener('click', () => {
+        fetchFiles('minecraft/plugins');
+    });
+
+    document.getElementById('goto-old-plugins').addEventListener('click', () => {
+        fetchFiles('minecraft/old-plugins');
+    });
+
+    // Add event listeners for fast move buttons
+    const moveToPluginsBtn = document.getElementById('move-to-plugins');
+    const moveToOldPluginsBtn = document.getElementById('move-to-old-plugins');
+
+    moveToPluginsBtn.addEventListener('click', () => {
+        if (filesToMove.length > 0) {
+            moveFilesToDestination('minecraft/plugins');
+        } else {
+            alert('No files selected for moving.');
+        }
+    });
+
+    moveToOldPluginsBtn.addEventListener('click', () => {
+        if (filesToMove.length > 0) {
+            moveFilesToDestination('minecraft/old-plugins');
+        } else {
+            alert('No files selected for moving.');
+        }
+    });
+
     fileUploadInput.addEventListener('change', () => {
         if (fileUploadInput.files.length === 0) {
             chosenFile.textContent = '';
@@ -403,6 +438,45 @@ document.addEventListener('DOMContentLoaded', () => {
             chosenFile.textContent = `${fileUploadInput.files.length} files selected`;
         }
     });
+
+    // Function to move files to a specific destination
+    async function moveFilesToDestination(destination) {
+        try {
+            // Move each file to the destination
+            const results = [];
+            for (const filePath of filesToMove) {
+                const formData = new FormData();
+                formData.append('source', filePath);
+                formData.append('destination', destination);
+                
+                const response = await fetch('/api/move', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                results.push(result);
+            }
+            
+            // Clear the filesToMove array and refresh the file list
+            filesToMove = [];
+            fetchFiles(currentDirectory);
+            updateFileActionButtons();
+            
+            // Show results
+            const successCount = results.filter(r => r.status === 'success').length;
+            const errorCount = results.length - successCount;
+            
+            if (errorCount === 0) {
+                alert(`Successfully moved ${successCount} file(s) to ${destination}.`);
+            } else {
+                alert(`Moved ${successCount} file(s) successfully, ${errorCount} failed.`);
+            }
+        } catch (error) {
+            console.error('Error moving files:', error);
+            alert('An error occurred while moving files.');
+        }
+    }
 
     uploadBtn.addEventListener('click', () => {
         const files = fileUploadInput.files;

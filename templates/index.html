@@ -131,6 +131,14 @@
             <button id="paste-btn" class="btn alt" style="display:none">Paste</button>
             <button id="cancel-move-btn" class="btn danger" style="display:none;">Cancel Move</button>
           </div>
+          <div class="row" style="margin-top:10px">
+            <button id="goto-plugins" class="btn" style="background:#374151">Go to Plugins</button>
+            <button id="goto-old-plugins" class="btn" style="background:#374151">Go to Old Plugins</button>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <button id="move-to-plugins" class="btn alt" style="display:none">Move to Plugins</button>
+            <button id="move-to-old-plugins" class="btn alt" style="display:none">Move to Old Plugins</button>
+          </div>
           <div style="height:8px"></div>
           <div class="card" style="background:#0d1320; border-color:#1c2740">
             <h3>Upload .jar</h3>
@@ -139,6 +147,7 @@
               <input type="file" id="file-upload-input" accept=".jar" class="input" style="display:none" multiple />
               <select id="upload-dest" class="input">
                 <option value="minecraft/plugins">minecraft/plugins/</option>
+                <option value="minecraft/old-plugins">minecraft/old-plugins/</option>
                 <option value="minecraft">minecraft/</option>
               </select>
               <button id="upload-btn" class="btn primary">Upload</button>
