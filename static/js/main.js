@@ -247,8 +247,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 div.textContent = root.toUpperCase();
                 fileRoots.appendChild(div);
             });
+        } else if (currentDirectory.startsWith('minecraft')) {
+            // Show quick navigation buttons when inside minecraft directory
+            fileRoots.style.display = 'grid';
+            fileRoots.innerHTML = '';
             
-            // Add quick navigation buttons for plugins and old-plugins
             const pluginsDiv = document.createElement('a');
             pluginsDiv.className = 'file-root';
             pluginsDiv.href = '#';
@@ -259,7 +262,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const oldPluginsDiv = document.createElement('a');
             oldPluginsDiv.className = 'file-root';
             oldPluginsDiv.href = '#';
-            oldPluginsDiv.dataset.path = 'minecraft/old-plugins';
+            oldPluginsDiv.dataset.path = 'minecraft/old_plugins';
             oldPluginsDiv.textContent = 'OLD PLUGINS';
             fileRoots.appendChild(oldPluginsDiv);
         } else {

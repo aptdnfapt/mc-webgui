@@ -26,6 +26,13 @@ def _is_path_safe(path):
 
 def list_directory_contents(path):
     """Lists contents of a directory. Path is relative to the user's home directory."""
+    # Ensure the plugins and old_plugins directories exist when accessing minecraft root or subdirectories
+    if path.startswith('minecraft'):
+        plugins_dir = os.path.join(MINECRAFT_ROOT, 'plugins')
+        old_plugins_dir = os.path.join(MINECRAFT_ROOT, 'old_plugins')
+        os.makedirs(plugins_dir, exist_ok=True)
+        os.makedirs(old_plugins_dir, exist_ok=True)
+    
     # Special case for the root view (~), only show the allowed directories.
     if path == '.':
         contents = []
