@@ -395,19 +395,29 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     fileUploadInput.addEventListener('change', () => {
-        chosenFile.textContent = fileUploadInput.files[0] ? fileUploadInput.files[0].name : '';
+        if (fileUploadInput.files.length === 0) {
+            chosenFile.textContent = '';
+        } else if (fileUploadInput.files.length === 1) {
+            chosenFile.textContent = fileUploadInput.files[0].name;
+        } else {
+            chosenFile.textContent = `${fileUploadInput.files.length} files selected`;
+        }
     });
 
     uploadBtn.addEventListener('click', () => {
-        const file = fileUploadInput.files[0];
+        const files = fileUploadInput.files;
         const destination = uploadDestSelect.value;
-        if (!file) {
-            alert('Please select a file to upload.');
+        if (files.length === 0) {
+            alert('Please select file(s) to upload.');
             return;
         }
 
         const formData = new FormData();
-        formData.append('file', file);
+        
+        // Append all selected files to the form data
+        for (let i = 0; i < files.length; i++) {
+            formData.append('files', files[i]);
+        }
         formData.append('destination', destination);
 
         const xhr = new XMLHttpRequest();
@@ -440,6 +450,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         fetchFiles(destination); // Refresh the destination directory
                         fileUploadInput.value = '';
                         chosenFile.textContent = '';
+                        alert(result.message); // Show success message
                     } else {
                         alert('Upload failed: ' + result.message);
                     }

@@ -97,12 +97,41 @@ def rename_item_route():
 
 @app.route('/api/upload', methods=['POST'])
 def upload_file_route():
-    if 'file' not in request.files:
+    # Check if files are present in the request
+    if 'files' not in request.files:
         return jsonify({"status": "error", "message": "No file part in request."})
-    file = request.files['file']
+    
+    files = request.files.getlist('files')
     destination = request.form.get('destination', 'plugins') # Default to plugins folder
-    result = file_manager.handle_upload(file, destination)
-    return jsonify(result)
+    
+    # Handle single file upload (backward compatibility)
+    if len(files) == 1 and files[0].filename != '':
+        result = file_manager.handle_upload(files[0], destination)
+        return jsonify(result)
+    
+    # Handle multiple file upload
+    if len(files) > 1 or (len(files) == 1 and files[0].filename != ''):
+        results = []
+        success_count = 0
+        error_count = 0
+        
+        for file in files:
+            if file and file.filename != '':
+                result = file_manager.handle_upload(file, destination)
+                results.append(result)
+                if result['status'] == 'success':
+                    success_count += 1
+                else:
+                    error_count += 1
+        
+        if error_count == 0:
+            return jsonify({"status": "success", "message": f"Successfully uploaded {success_count} file(s)."})
+        elif success_count == 0:
+            return jsonify({"status": "error", "message": f"Failed to upload {error_count} file(s).", "details": results})
+        else:
+            return jsonify({"status": "partial_success", "message": f"Uploaded {success_count} file(s) successfully, {error_count} file(s) failed.", "details": results})
+    
+    return jsonify({"status": "error", "message": "No file selected."})
 
 # --- SocketIO Event Handlers ---
 def get_system_uptime():
